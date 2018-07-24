@@ -13,8 +13,8 @@ import (
 )
 
 var cinder_path string = ""
-var dest_path string = "/Users/henrique/Desktop/"
-var project_name string = "SparkTest"
+var dest_path string = ""
+var project_name string = ""
 
 func getDefaultCinderPath() string {
 	//todo check for enviroment variable
@@ -36,7 +36,7 @@ func createFiles(path string) bool {
 
 func buildCMakeProject() {
 
-	cmakePath := cinder_path + "/tools/scripts/files/CMakeLists.txt"
+	cmakePath := "./CMakeLists.txt"
 
 	// write the whole body at once
 	if _, err := os.Stat(dest_path + project_name); !os.IsNotExist(err) {
@@ -120,8 +120,8 @@ type testStruct struct {
 	CinderPath string `json:"CinderPath"`
 }
 
-func main() {
-	// Open our jsonFile
+func parseJson() {
+
 	jsonFile, err := os.Open("config.json")
 	defer jsonFile.Close()
 	// if we os.Open returns an error then handle it
@@ -139,9 +139,15 @@ func main() {
 		fmt.Printf("There was an error decoding the json. err = %s", err)
 		return
 	}
-	fmt.Println(t.CinderPath)
 
-	cinder_path = t.CinderPath
+	cinder_path, _ = filepath.Abs(t.CinderPath)
+	fmt.Println(". CinderPath: " + cinder_path)
+
+}
+
+func main() {
+
+	parseJson()
 
 	// ---
 	destStringPtr := flag.String("dest", ".", "project destination path")
@@ -155,11 +161,11 @@ func main() {
 	if lastChar != "/" {
 		dest_path += "/"
 	}
-	fmt.Println(". destination: " + dest_path)
+	fmt.Println(". Destination: " + dest_path)
 
 	// set project name
 	project_name = *projectNamePtr
-	fmt.Println(". project name: " + project_name)
+	fmt.Println(". Project name: " + project_name)
 
 	// check if project already exisits
 	if _, err := os.Stat(dest_path + project_name); !os.IsNotExist(err) {
@@ -168,11 +174,11 @@ func main() {
 	}
 
 	//
-	fmt.Println("cinder path: " + cinder_path)
 
 	createFiles(dest_path)
 	buildCMakeProject()
 	cleanUpFiles()
 
+	fmt.Println("Created at: " + dest_path)
 	fmt.Println(" 🌋 done! ✨")
 }
