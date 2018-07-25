@@ -1,8 +1,6 @@
 cmake_minimum_required( VERSION 2.8 FATAL_ERROR )
 set( CMAKE_VERBOSE_MAKEFILE ON )
 
-#template
-
 project( __PROJECT_NAME__ )
 
 get_filename_component( CINDER_PATH __CINDER_PATH__ ABSOLUTE )
