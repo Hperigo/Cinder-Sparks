@@ -16,7 +16,7 @@ import (
 
 var cinder_path string = ""
 var dest_path string = ""
-var project_name string = ""
+var app_name string = ""
 
 // DownloadFile will download a url to a local file. It's efficient because it will
 // write as it downloads and not load the whole file into memory.
@@ -47,8 +47,10 @@ func DownloadFile(filepath string, url string) error {
 
 func createFiles(path string) bool {
 
-	base_project_path := cinder_path + "/blocks/__AppTemplates/BasicApp/Opengl/"
-	copy.Copy(base_project_path, dest_path+"/"+project_name)
+	fmt.Println("copying files to...:  " + dest_path + "/" + app_name)
+
+	base_project_path := "./templates/BasicApp/"
+	copy.Copy(base_project_path, dest_path+app_name)
 	return true
 }
 
@@ -57,9 +59,9 @@ func buildCMakeProject() {
 	cmakePath := "./templates/CMakeLists.txt"
 
 	// write the whole body at once
-	if _, err := os.Stat(dest_path + project_name); !os.IsNotExist(err) {
+	if _, err := os.Stat(dest_path + app_name); !os.IsNotExist(err) {
 
-		createError := os.Mkdir(dest_path+project_name+"/proj", 0777)
+		createError := os.Mkdir(dest_path+app_name+"/proj", 0777)
 		if createError != nil {
 			panic(createError)
 		}
@@ -77,19 +79,20 @@ func buildCMakeProject() {
 	for i, _ := range lines {
 
 		lines[i] = strings.Replace(lines[i], "__CINDER_PATH__", cinder_path, -1)
-		lines[i] = strings.Replace(lines[i], "__PROJECT_NAME__", project_name, -1)
+		lines[i] = strings.Replace(lines[i], "__PROJECT_NAME__", app_name, -1)
+		lines[i] = strings.Replace(lines[i], "__app_name__", app_name, -1)
 	}
 
 	output := strings.Join(lines, "\n")
 
 	{
-		err = os.Mkdir(dest_path+project_name+"/proj/cmake/", 0777)
+		err = os.Mkdir(dest_path+app_name+"/proj/cmake/", 0777)
 		if err != nil {
 			panic(err)
 		}
 	}
 
-	f, err := os.Create(dest_path + "/" + project_name + "/CMakeLists.txt")
+	f, err := os.Create(dest_path + "/" + app_name + "/CMakeLists.txt")
 	defer f.Close()
 
 	if err != nil {
@@ -101,8 +104,8 @@ func buildCMakeProject() {
 
 func cleanUpFiles() {
 
-	var basedir string = dest_path + project_name
-	// os.Rename( basedir + "/src/_TBOX_PREFIX_App.cpp", basedir + "/src/" + project_name + "App.cpp")
+	var basedir string = dest_path + app_name
+	// os.Rename( basedir + "/src/_TBOX_PREFIX_App.cpp", basedir + "/src/" + app_name + "App.cpp")
 
 	os.Remove(basedir + "/assets/_TBOX_IGNORE_")
 	os.Remove(basedir + "/template.xml")
@@ -119,11 +122,11 @@ func cleanUpFiles() {
 
 	lines := strings.Split(string(input), "\n")
 	for i, _ := range lines {
-		lines[i] = strings.Replace(lines[i], "_TBOX_PREFIX_App", project_name+"App", -1)
+		lines[i] = strings.Replace(lines[i], "_TBOX_PREFIX_App", app_name+"App", -1)
 	}
 	output := strings.Join(lines, "\n")
 
-	f, err := os.Create(basedir + "/src/" + project_name + "App.cpp")
+	f, err := os.Create(basedir + "/src/" + app_name + "App.cpp")
 	defer f.Close()
 
 	if err != nil {
@@ -177,9 +180,11 @@ func main() {
 
 	// ---
 	destStringPtr := flag.String("dest", ".", "project destination path")
-	projectNamePtr := flag.String("name", "Basic", "Name of the project, default is Basic")
-
+	appNamePtr := flag.String("name", "Basic", "Name of the project, default is Basic")
+	isStandAlonePtr := flag.Bool("standalone", false, "creates a santadalone folder with cinder and a app folder")
 	flag.Parse()
+
+	fmt.Println(*isStandAlonePtr)
 
 	// set destination path
 	dest_path = *destStringPtr
@@ -187,16 +192,48 @@ func main() {
 	if lastChar != "/" {
 		dest_path += "/"
 	}
+
 	fmt.Println(". Destination: " + dest_path)
 
 	// set project name
-	project_name = *projectNamePtr
-	fmt.Println(". Project name: " + project_name)
+	app_name = *appNamePtr
+	fmt.Println(". Project name: " + app_name)
+
+	if *isStandAlonePtr {
+		dest_path = dest_path + app_name + "Poject/"
+
+		fmt.Println("standalone path is: " + dest_path)
+
+		createError := os.Mkdir(dest_path, 0777)
+		if createError != nil {
+			panic(createError)
+		}
+		cinder_path = dest_path + "lib/"
+		createError = os.Mkdir(cinder_path, 0777)
+		if createError != nil {
+			panic(createError)
+		}
+
+		// fmt.Println(runtime.GOOS)
+		// if runtime.GOOS == "windows" {
+		// 	fmt.Println("Hello from Windows")
+		// } else if runtime.GOOS == "darwin" {
+		// 	fmt.Println("Hello from dawrwin")
+		// }
+
+		// git clone git@github.com:whatever folder-na
+		// DownloadFile( cinder_path,
+	}
 
 	// check if project already exisits
-	if _, err := os.Stat(dest_path + project_name); !os.IsNotExist(err) {
+	if _, err := os.Stat(dest_path + app_name); !os.IsNotExist(err) {
 		fmt.Println("🔥 Folder already exists, aborting!")
 		return
+	}
+
+	createError := os.Mkdir(dest_path+"/"+app_name, 0777)
+	if createError != nil {
+		panic(createError)
 	}
 
 	createFiles(dest_path)
